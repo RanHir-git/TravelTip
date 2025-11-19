@@ -36,14 +36,14 @@ function onInit() {
 }
 
 function renderLocs(locs) {
+    console.log('locs:', locs)
     const selectedLocId = getLocIdFromQueryParams()
     var strHTML = locs
         .map((loc) => {
             const className = loc.id === selectedLocId ? 'active' : ''
-            const latlng = { lat: loc.geo.lat, lng: loc.geo.lng }
             let distanceTo = ''
             if (gUserPos) {
-                distanceTo = `Distance <--> ${utilService.getDistance(latlng, gUserPos)}`
+                distanceTo = `Distance <--> ${utilService.getDistance(loc.geo, gUserPos)}`
             }
             return `
         <li class="loc ${className}" data-id="${loc.id}">
@@ -310,6 +310,9 @@ function onSetFilterBy({ txt, minRate }) {
 function renderLocStats() {
     locService.getLocCountByRateMap().then((stats) => {
         handleStats(stats, 'loc-stats-rate')
+    })
+    locService.getLocCountByUpdateMap().then((stats) => {
+        handleStats(stats, 'loc-stats-update')
     })
 }
 
