@@ -67,6 +67,26 @@
             </section>
         </div>
     </main>
+    <dialog class="loc-dialog">
+        <form method="dialog">
+            <h3 class="dialog-title"></h3>
+            <div class="name-input-container">
+                <label>
+                    Location name:
+                    <input type="text" name="name" placeholder="Location name" />
+                </label>
+            </div>
+            <label>
+                Rate (1-5):
+                <input type="number" name="rate" min="1" max="5" />
+            </label>
+            <div class="dialog-btns">
+                <button type="submit" class="btn-submit">Submit</button>
+                <button type="button" class="btn-cancel">Cancel</button>
+            </div>
+        </form>
+    </dialog>
+    
     <pre class="debug" hidden></pre>
     <div class="user-msg"></div>
     <script type="module" src="js/app.controller.js"></script>
