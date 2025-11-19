@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # TravelTip
 #### The app that gets you somewhere
 
@@ -89,3 +90,6 @@ Here is a sample usage:
 ```
 
 
+=======
+# TravelTip
+>>>>>>> c7998c24d6e17dbef6a65da9187a8e5c97cb33ef
