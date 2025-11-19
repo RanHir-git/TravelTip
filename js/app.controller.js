@@ -98,12 +98,11 @@ function onAddLoc(geo) {
     showDialog({
         title: 'Add Location',
         showNameInput: true,
-        nameValue: geo.address || 'Just a place',
+        nameValue: geo.address || 'Just a place',   //placeholder name
         rateValue: '3'
     })
         .then(result => {
             if (!result) return
-
             const loc = {
                 name: result.name,
                 rate: +result.rate,
