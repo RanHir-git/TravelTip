@@ -18,6 +18,8 @@ window.app = {
     onSetFilterBy,
 }
 
+let gUserPos
+
 function onInit() {
     getFilterByFromQueryParams()
     loadAndRenderLocs()
@@ -35,14 +37,19 @@ function onInit() {
 
 function renderLocs(locs) {
     const selectedLocId = getLocIdFromQueryParams()
-
     var strHTML = locs
         .map((loc) => {
             const className = loc.id === selectedLocId ? 'active' : ''
+            const latlng = { lat: loc.geo.lat, lng: loc.geo.lng }
+            let distanceTo = ''
+            if (gUserPos) {
+                distanceTo = `Distance <--> ${utilService.getDistance(latlng, gUserPos)}`
+            }
             return `
         <li class="loc ${className}" data-id="${loc.id}">
             <h4>  
                 <span>${loc.name}</span>
+                <span>${distanceTo}</span>
                 <span title="${loc.rate} stars">${'★'.repeat(loc.rate)}</span>
             </h4>
             <p class="muted">
@@ -155,6 +162,7 @@ function onPanToUserPos() {
             flashMsg(
                 `You are at Latitude: ${latLng.lat} Longitude: ${latLng.lng}`
             )
+            gUserPos = latLng
         })
         .catch((err) => {
             console.error('OOPs:', err)
@@ -292,6 +300,8 @@ function renderLocStats() {
 function handleStats(stats, selector) {
     // stats = { low: 37, medium: 11, high: 100, total: 148 }
     // stats = { low: 5, medium: 5, high: 5, baba: 55, mama: 30, total: 100 }
+    console.log('stats:', stats)
+    console.log('selector:', selector)
     const labels = cleanStats(stats)
     const colors = utilService.getColors()
 
