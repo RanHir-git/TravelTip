@@ -36,15 +36,11 @@ function onInit() {
 }
 
 function renderLocs(locs) {
-    console.log('locs:', locs)
     const selectedLocId = getLocIdFromQueryParams()
     var strHTML = locs
         .map((loc) => {
             const className = loc.id === selectedLocId ? 'active' : ''
-            let distanceTo = ''
-            if (gUserPos) {
-                distanceTo = `Distance <--> ${utilService.getDistance(loc.geo, gUserPos)}`
-            }
+            let distanceTo = getDistanceHome(loc)
             return `
         <li class="loc ${className}" data-id="${loc.id}">
             <h4>  
@@ -124,15 +120,15 @@ function onAddLoc(geo) {
     showDialog({
         title: 'Add Location',
         showNameInput: true,
-        nameValue: geo.address || 'Just a place',   //placeholder name
-        rateValue: '3'
+        nameValue: geo.address || 'Just a place', //placeholder name
+        rateValue: '3',
     })
-        .then(result => {
+        .then((result) => {
             if (!result) return
             const loc = {
                 name: result.name,
                 rate: +result.rate,
-                geo
+                geo,
             }
             return locService.save(loc)
         })
@@ -177,29 +173,31 @@ function onPanToUserPos() {
 }
 
 function onUpdateLoc(locId) {
-    locService.getById(locId)
-        .then(loc => {
+    locService
+        .getById(locId)
+        .then((loc) => {
             return showDialog({
                 title: 'Update Location Rate',
                 showNameInput: false,
-                rateValue: loc.rate.toString()
+                rateValue: loc.rate.toString(),
+            }).then((result) => {
+                //after getting new rating, save if changed
+                if (!result) return null
+                const rate = +result.rate
+                if (rate && rate !== loc.rate) {
+                    loc.rate = rate
+                    return locService.save(loc) //save updated loc
+                }
+                return null
             })
-                .then(result => {   //after getting new rating, save if changed
-                    if (!result) return null
-                    const rate = +result.rate
-                    if (rate && rate !== loc.rate) {
-                        loc.rate = rate
-                        return locService.save(loc) //save updated loc
-                    }
-                    return null
-                })
         })
-        .then(savedLoc => { //after saving, show msg and re-render locs
+        .then((savedLoc) => {
+            //after saving, show msg and re-render locs
             if (!savedLoc) return
             flashMsg(`Rate was set to: ${savedLoc.rate}`)
             loadAndRenderLocs()
         })
-        .catch(err => { 
+        .catch((err) => {
             console.error('OOPs:', err)
             flashMsg('Cannot update location')
         })
@@ -215,7 +213,20 @@ function onSelectLoc(locId) {
         })
 }
 
+function getDistanceHome(loc) {
+    let distanceTo = ''
+    if (gUserPos) {
+        distanceTo = `Distance <--> ${utilService.getDistance(
+            loc.geo,
+            gUserPos
+        )}`
+    }
+    return distanceTo
+}
+
 function displayLoc(loc) {
+    let distanceTo = getDistanceHome(loc)
+
     document.querySelector('.loc.active')?.classList?.remove('active')
     document.querySelector(`.loc[data-id="${loc.id}"]`).classList.add('active')
 
@@ -226,6 +237,7 @@ function displayLoc(loc) {
     el.querySelector('.loc-name').innerText = loc.name
     el.querySelector('.loc-address').innerText = loc.geo.address
     el.querySelector('.loc-rate').innerHTML = '★'.repeat(loc.rate)
+    el.querySelector('.loc-dist-to').innerText = distanceTo
     el.querySelector('[name=loc-copier]').value = window.location
     el.classList.add('show')
 
@@ -319,8 +331,6 @@ function renderLocStats() {
 function handleStats(stats, selector) {
     // stats = { low: 37, medium: 11, high: 100, total: 148 }
     // stats = { low: 5, medium: 5, high: 5, baba: 55, mama: 30, total: 100 }
-    console.log('stats:', stats)
-    console.log('selector:', selector)
     const labels = cleanStats(stats)
     const colors = utilService.getColors()
 
@@ -381,10 +391,12 @@ function showDialog({ title, showNameInput, nameValue = '', rateValue = '' }) {
 
     elTitle.textContent = title
     nameContainer.style.display = showNameInput ? 'block' : 'none'
-    if (showNameInput) {    //add new loc
+    if (showNameInput) {
+        //add new loc
         nameInput.value = nameValue
         nameInput.required = true
-    } else {    // update loc
+    } else {
+        // update loc
         nameInput.required = false
     }
 
@@ -392,21 +404,24 @@ function showDialog({ title, showNameInput, nameValue = '', rateValue = '' }) {
     rateInput.required = true
 
     return new Promise((resolve) => {
-        const handleSubmit = (ev) => {   //form submission
+        const handleSubmit = (ev) => {
+            //form submission
             ev.preventDefault()
             const formData = new FormData(form)
             const result = {
                 name: formData.get('name') || '',
-                rate: formData.get('rate')
+                rate: formData.get('rate'),
             }
             dialog.close()
             resolve(result)
         }
-        const handleCancel = () => {    //cancel button
+        const handleCancel = () => {
+            //cancel button
             dialog.close()
             resolve(null)
         }
-        const handleDialogCancel = (ev) => {  //cancel event (ESC key)
+        const handleDialogCancel = (ev) => {
+            //cancel event (ESC key)
             ev.preventDefault()
             resolve(null)
         }
