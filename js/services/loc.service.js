@@ -58,7 +58,6 @@ function query() {
                 locs.sort((p1, p2) => (p1.createdAt - p2.createdAt) * gSortBy.time)
             }
             
-
             return locs
         })
 }

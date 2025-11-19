@@ -95,16 +95,24 @@ function onSearchAddress(ev) {
 }
 
 function onAddLoc(geo) {
-    const locName = prompt('Loc name', geo.address || 'Just a place')
-    if (!locName) return
+    showDialog({
+        title: 'Add Location',
+        showNameInput: true,
+        nameValue: geo.address || 'Just a place',
+        rateValue: '3'
+    })
+        .then(result => {
+            if (!result) return
 
-    const loc = {
-        name: locName,
-        rate: +prompt(`Rate (1-5)`, '3'),
-        geo
-    }
-    locService.save(loc)
+            const loc = {
+                name: result.name,
+                rate: +result.rate,
+                geo
+            }
+            return locService.save(loc)
+        })
         .then((savedLoc) => {
+            if (!savedLoc) return
             flashMsg(`Added Location (id: ${savedLoc.id})`)
             utilService.updateQueryParams({ locId: savedLoc.id })
             loadAndRenderLocs()
@@ -141,20 +149,29 @@ function onPanToUserPos() {
 function onUpdateLoc(locId) {
     locService.getById(locId)
         .then(loc => {
-            const rate = +prompt('New rate?', loc.rate)
-            if (rate && rate !== loc.rate) {
-                loc.rate = rate
-                locService.save(loc)
-                    .then(savedLoc => {
-                        flashMsg(`Rate was set to: ${savedLoc.rate}`)
-                        loadAndRenderLocs()
-                    })
-                    .catch(err => {
-                        console.error('OOPs:', err)
-                        flashMsg('Cannot update location')
-                    })
-
-            }
+            return showDialog({
+                title: 'Update Location Rate',
+                showNameInput: false,
+                rateValue: loc.rate.toString()
+            })
+                .then(result => {   //after getting new rating, save if changed
+                    if (!result) return null
+                    const rate = +result.rate
+                    if (rate && rate !== loc.rate) {
+                        loc.rate = rate
+                        return locService.save(loc) //save updated loc
+                    }
+                    return null
+                })
+        })
+        .then(savedLoc => { //after saving, show msg and re-render locs
+            if (!savedLoc) return
+            flashMsg(`Rate was set to: ${savedLoc.rate}`)
+            loadAndRenderLocs()
+        })
+        .catch(err => { 
+            console.error('OOPs:', err)
+            flashMsg('Cannot update location')
         })
 }
 
@@ -313,4 +330,52 @@ function cleanStats(stats) {
         return acc
     }, [])
     return cleanedStats
+}
+
+function showDialog({ title, showNameInput, nameValue = '', rateValue = '' }) {
+    const dialog = document.querySelector('.loc-dialog')
+    const form = dialog.querySelector('form')
+    const elTitle = dialog.querySelector('.dialog-title')
+    const nameContainer = dialog.querySelector('.name-input-container')
+    const nameInput = dialog.querySelector('input[name="name"]')
+    const rateInput = dialog.querySelector('input[name="rate"]')
+    const cancelBtn = dialog.querySelector('.btn-cancel')
+
+    elTitle.textContent = title
+    nameContainer.style.display = showNameInput ? 'block' : 'none'
+    if (showNameInput) {    //add new loc
+        nameInput.value = nameValue
+        nameInput.required = true
+    } else {    // update loc
+        nameInput.required = false
+    }
+
+    rateInput.value = rateValue
+    rateInput.required = true
+
+    return new Promise((resolve) => {
+        const handleSubmit = (ev) => {   //form submission
+            ev.preventDefault()
+            const formData = new FormData(form)
+            const result = {
+                name: formData.get('name') || '',
+                rate: formData.get('rate')
+            }
+            dialog.close()
+            resolve(result)
+        }
+        const handleCancel = () => {    //cancel button
+            dialog.close()
+            resolve(null)
+        }
+        const handleDialogCancel = (ev) => {  //cancel event (ESC key)
+            ev.preventDefault()
+            resolve(null)
+        }
+        //event listeners
+        form.addEventListener('submit', handleSubmit, { once: true })
+        cancelBtn.addEventListener('click', handleCancel, { once: true })
+        dialog.addEventListener('cancel', handleDialogCancel, { once: true })
+        dialog.showModal()
+    })
 }
